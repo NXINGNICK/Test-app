@@ -93,6 +93,16 @@ export const getKanjiJlptLevels = async (characters: string[]): Promise<Record<s
     }
 };
 
+const wordTokenSchema = {
+  type: Type.OBJECT,
+  properties: {
+    word: { type: Type.STRING, description: "A single Japanese word or particle from the sentence." },
+    reading: { type: Type.STRING, description: "The hiragana or katakana reading of the word." },
+    definition: { type: Type.STRING, description: "A concise English definition of the word." }
+  },
+  required: ["word", "reading", "definition"]
+};
+
 const japaneseSentenceSchema = {
   type: Type.ARRAY,
   items: {
@@ -101,8 +111,9 @@ const japaneseSentenceSchema = {
       japanese: { type: Type.STRING, description: "The sentence in Japanese using Kanji." },
       hiragana: { type: Type.STRING, description: "The Hiragana reading of the sentence." },
       english: { type: Type.STRING, description: "The English translation of the sentence." },
+      tokens: { type: Type.ARRAY, items: wordTokenSchema, description: "A tokenized breakdown of the Japanese sentence into its component words/particles." }
     },
-    required: ["japanese", "hiragana", "english"],
+    required: ["japanese", "hiragana", "english", "tokens"],
   },
 };
 
@@ -114,7 +125,7 @@ export const generateJapaneseSentences = async (kanji: Kanji[], targetJlptLevel?
     ? `The vocabulary and grammar used, excluding the provided Kanji list, should be appropriate for a JLPT N${targetJlptLevel} learner. The overall sentence structure should feel natural for this level.`
     : `The sentences should be at an intermediate level (around JLPT N4 to N3).`;
 
-  const prompt = `Create 5 distinct, natural-sounding Japanese sentences. ${levelInstruction} You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice.`;
+  const prompt = `Create 5 distinct, natural-sounding Japanese sentences. ${levelInstruction} You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice. For each sentence, also provide a tokenized breakdown of the Japanese sentence into its component words and particles. Each token must include the word, its reading, and a concise English definition.`;
   console.debug("geminiService: Sending prompt to Gemini for Japanese sentences:", prompt);
 
   try {
@@ -145,8 +156,9 @@ const englishSentenceSchema = {
       properties: {
         english: { type: Type.STRING, description: "An English sentence incorporating the meaning of a Kanji." },
         japanese: { type: Type.STRING, description: "A natural Japanese translation of the English sentence, using the original Kanji." },
+        tokens: { type: Type.ARRAY, items: wordTokenSchema, description: "A tokenized breakdown of the Japanese translation." }
       },
-      required: ["english", "japanese"],
+      required: ["english", "japanese", "tokens"],
     },
   };
 
@@ -158,7 +170,7 @@ export const generateEnglishSentences = async (kanji: Kanji[], targetJlptLevel?:
         ? `The English sentences should be suitable for a JLPT N${targetJlptLevel} learner's comprehension level. The corresponding Japanese translations MUST also use vocabulary and grammar appropriate for this level (excluding the provided Kanji).`
         : `The English sentences should be at an intermediate level. The corresponding Japanese translations should be around JLPT N4 to N3 level.`;
 
-    const prompt = `Create 5 distinct English sentences. ${levelInstruction} Each English sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji.`;
+    const prompt = `Create 5 distinct English sentences. ${levelInstruction} Each English sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji. Also provide a tokenized breakdown of the Japanese translation into its component words/particles, where each token includes the word, its reading, and a concise English definition.`;
     console.debug("geminiService: Sending prompt to Gemini for English sentences:", prompt);
 
     try {

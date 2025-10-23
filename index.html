@@ -18,15 +18,27 @@
     </script>
     <style>
       :root {
-        --theme-bg: #0f172a;
-        --theme-surface: #1e293b;
-        --theme-primary: #0891b2;
-        --theme-secondary: #4f46e5;
-        --theme-accent: #22d3ee;
+        --theme-bg: #020617;
+        --theme-surface: #0f172a;
+        --theme-primary: #0e7490;
+        --theme-secondary: #4338ca;
+        --theme-accent: #06b6d4;
         --theme-text: #e2e8f0;
         --theme-text-muted: #94a3b8;
-        --theme-border: #334155;
+        --theme-border: #1e293b;
         --theme-primary-text: #ffffff;
+      }
+      /* For the library scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--theme-surface);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: var(--theme-border);
+        border-radius: 10px;
+        border: 2px solid var(--theme-surface);
       }
     </style>
     <script>

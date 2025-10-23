@@ -21,14 +21,14 @@ interface ThemeContextType {
 const THEME_STORAGE_KEY = 'kanjiAppTheme';
 
 export const defaultTheme: ThemeColors = {
-  bg: '#0f172a',
-  surface: '#1e293b',
-  primary: '#0891b2',
-  secondary: '#4f46e5',
-  accent: '#22d3ee',
+  bg: '#020617',
+  surface: '#0f172a',
+  primary: '#0e7490',
+  secondary: '#4338ca',
+  accent: '#06b6d4',
   text: '#e2e8f0',
   'text-muted': '#94a3b8',
-  border: '#334155',
+  border: '#1e293b',
   'primary-text': '#ffffff',
 };
 
@@ -48,8 +48,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const root = document.documentElement;
-    for (const [key, value] of Object.entries(theme)) {
-        root.style.setProperty(`--theme-${key}`, value);
+    // FIX: Iterate over keys for better type safety with setProperty. This resolves an error where the value from Object.entries was inferred as 'unknown'.
+    for (const key of Object.keys(theme) as Array<keyof ThemeColors>) {
+        root.style.setProperty(`--theme-${key}`, theme[key]);
     }
     try {
         localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
