@@ -28,11 +28,11 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
       const s = sentence as JapaneseSentence;
       return (
         <div>
-          <p className="text-2xl mb-2 font-light tracking-wide">{s.japanese}</p>
+          <p className="text-2xl mb-2 font-light tracking-wide text-theme-text">{s.japanese}</p>
           {isRevealed && (
-            <div className="mt-4 pt-4 border-t border-slate-700 space-y-2">
-              <p className="text-cyan-300 text-lg">{s.hiragana}</p>
-              <p className="text-slate-400 text-base italic">"{s.english}"</p>
+            <div className="mt-4 pt-4 border-t border-theme-border space-y-2">
+              <p className="text-theme-accent text-lg">{s.hiragana}</p>
+              <p className="text-theme-text-muted text-base italic">"{s.english}"</p>
             </div>
           )}
         </div>
@@ -41,10 +41,10 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
       const s = sentence as EnglishSentence;
       return (
         <div>
-          <p className="text-xl mb-2 font-light">"{s.english}"</p>
+          <p className="text-xl mb-2 font-light text-theme-text">"{s.english}"</p>
           {isRevealed && (
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <p className="text-cyan-300 text-2xl tracking-wide">{s.japanese}</p>
+            <div className="mt-4 pt-4 border-t border-theme-border">
+              <p className="text-theme-accent text-2xl tracking-wide">{s.japanese}</p>
             </div>
           )}
         </div>
@@ -53,7 +53,7 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
   };
 
   return (
-    <div className={`bg-slate-800 p-4 rounded-lg shadow-md transition-all ${feedbackGiven ? 'opacity-70' : ''}`}>
+    <div className={`bg-theme-bg p-4 rounded-lg shadow-md transition-all ${feedbackGiven ? 'opacity-70' : ''}`}>
       {renderContent()}
       <div className="flex justify-end items-center mt-3 gap-3">
         {isRevealed && !feedbackGiven && usedKanjiInSentence.length > 0 && (
@@ -76,7 +76,7 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
         )}
         <button
           onClick={() => setIsRevealed(!isRevealed)}
-          className="text-sm bg-slate-700 hover:bg-slate-600 text-cyan-400 font-semibold py-1 px-3 rounded-md transition-colors"
+          className="text-sm bg-theme-surface hover:bg-theme-border text-theme-accent font-semibold py-1 px-3 rounded-md transition-colors"
         >
           {isRevealed ? 'Hide' : 'Reveal'}
         </button>

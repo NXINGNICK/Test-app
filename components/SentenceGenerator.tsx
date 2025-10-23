@@ -84,10 +84,24 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
     setMode(generationMode);
 
     try {
-      let result: (JapaneseSentence | EnglishSentence)[];
-      const targetLevel = jlptFilter > 0 ? jlptFilter : undefined;
+      let targetLevel: number | undefined;
+      if (jlptFilter > 0) {
+        targetLevel = jlptFilter;
+      } else {
+        const kanjiWithLevels = kanjiList.filter(k => k.jlptLevel !== null && k.jlptLevel > 0);
+        if (kanjiWithLevels.length > 0) {
+            const sumOfLevels = kanjiWithLevels.reduce((acc, k) => acc + k.jlptLevel!, 0);
+            const averageLevel = Math.round(sumOfLevels / kanjiWithLevels.length);
+            targetLevel = Math.max(1, Math.min(5, averageLevel)); // Clamp between N1 and N5
+            console.debug(`SentenceGenerator: No JLPT filter selected. Calculated average JLPT level of library: N${targetLevel}`);
+        } else {
+            console.debug("SentenceGenerator: No JLPT filter and no Kanji with JLPT levels in library. Target level is undefined.");
+        }
+      }
 
-      console.debug("SentenceGenerator: Starting sentence generation API call.");
+      let result: (JapaneseSentence | EnglishSentence)[];
+      
+      console.debug(`SentenceGenerator: Starting sentence generation API call with target level: ${targetLevel ? 'N' + targetLevel : 'default (N4/N3)'}.`);
       if (generationMode === GenerationMode.Japanese) {
         result = await generateJapaneseSentences(selectedKanji, targetLevel);
       } else {
@@ -117,10 +131,10 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
   };
 
   return (
-    <div className="bg-slate-800/50 p-6 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold mb-4 text-cyan-300">Sentence Generation</h2>
+    <div className="bg-theme-surface p-6 rounded-lg shadow-lg">
+      <h2 className="text-xl font-semibold mb-4 text-theme-accent">Sentence Generation</h2>
       <div className="mb-4">
-        <select value={jlptFilter} onChange={e => setJlptFilter(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+        <select value={jlptFilter} onChange={e => setJlptFilter(Number(e.target.value))} className="w-full bg-theme-bg border border-theme-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-theme-primary text-theme-text">
             <option value={0}>Target JLPT Level (Any)</option>
             <option value={5}>N5</option>
             <option value={4}>N4</option>
@@ -133,14 +147,14 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
         <button
           onClick={() => handleGenerate(GenerationMode.Japanese)}
           disabled={isLoading}
-          className="w-full sm:w-1/2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-colors flex items-center justify-center"
+          className="w-full sm:w-1/2 bg-theme-primary hover:brightness-110 disabled:bg-theme-border disabled:cursor-not-allowed text-theme-primary-text font-bold py-3 px-4 rounded-md transition-all flex items-center justify-center"
         >
           {isLoading && mode === GenerationMode.Japanese && <SpinnerIcon />} Form Japanese Sentences
         </button>
         <button
           onClick={() => handleGenerate(GenerationMode.English)}
           disabled={isLoading}
-          className="w-full sm:w-1/2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-colors flex items-center justify-center"
+          className="w-full sm:w-1/2 bg-theme-secondary hover:brightness-110 disabled:bg-theme-border disabled:cursor-not-allowed text-theme-primary-text font-bold py-3 px-4 rounded-md transition-all flex items-center justify-center"
         >
           {isLoading && mode === GenerationMode.English && <SpinnerIcon />} Form English Sentences
         </button>
@@ -150,12 +164,12 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
 
       <div className="space-y-4">
         {isLoading && (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-8 text-theme-text-muted">
                 <p>AI is thinking... this may take a moment.</p>
             </div>
         )}
         {!isLoading && sentences.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-8 text-theme-text-muted">
                 <p>Generate sentences to start your review session!</p>
             </div>
         )}

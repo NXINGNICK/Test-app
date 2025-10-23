@@ -109,8 +109,12 @@ const japaneseSentenceSchema = {
 export const generateJapaneseSentences = async (kanji: Kanji[], targetJlptLevel?: number): Promise<JapaneseSentence[]> => {
   console.debug("geminiService: generateJapaneseSentences called with kanji:", kanji.map(k=>k.character), "and target JLPT level:", targetJlptLevel);
   const kanjiChars = kanji.map(k => k.character).join(', ');
-  const levelPrompt = targetJlptLevel ? ` at a JLPT N${targetJlptLevel} level` : ` at an N3/N2 level`;
-  const prompt = `Create 5 distinct, natural-sounding Japanese sentences${levelPrompt}. You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice.`;
+  
+  const levelInstruction = targetJlptLevel
+    ? `The vocabulary and grammar used, excluding the provided Kanji list, should be appropriate for a JLPT N${targetJlptLevel} learner. The overall sentence structure should feel natural for this level.`
+    : `The sentences should be at an intermediate level (around JLPT N4 to N3).`;
+
+  const prompt = `Create 5 distinct, natural-sounding Japanese sentences. ${levelInstruction} You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice.`;
   console.debug("geminiService: Sending prompt to Gemini for Japanese sentences:", prompt);
 
   try {
@@ -149,8 +153,12 @@ const englishSentenceSchema = {
 export const generateEnglishSentences = async (kanji: Kanji[], targetJlptLevel?: number): Promise<EnglishSentence[]> => {
     console.debug("geminiService: generateEnglishSentences called with kanji:", kanji.map(k=>k.character), "and target JLPT level:", targetJlptLevel);
     const kanjiChars = kanji.map(k => k.character).join(', ');
-    const levelPrompt = targetJlptLevel ? ` that would be appropriate for a JLPT N${targetJlptLevel} learner` : ``;
-    const prompt = `Create 5 distinct English sentences${levelPrompt}. Each sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji.`;
+    
+    const levelInstruction = targetJlptLevel
+        ? `The English sentences should be suitable for a JLPT N${targetJlptLevel} learner's comprehension level. The corresponding Japanese translations MUST also use vocabulary and grammar appropriate for this level (excluding the provided Kanji).`
+        : `The English sentences should be at an intermediate level. The corresponding Japanese translations should be around JLPT N4 to N3 level.`;
+
+    const prompt = `Create 5 distinct English sentences. ${levelInstruction} Each English sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji.`;
     console.debug("geminiService: Sending prompt to Gemini for English sentences:", prompt);
 
     try {
