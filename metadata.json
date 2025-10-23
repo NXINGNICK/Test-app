@@ -1,0 +1,5 @@
+{
+  "name": "Kanji Sentence Creator",
+  "description": "An app to help users learn Japanese Kanji by generating custom sentences. Users add Kanji to their library via text or image, and the AI creates sentences focusing on recent and less-practiced characters, with options for both Japanese and English sentence generation.",
+  "requestFramePermissions": []
+}
