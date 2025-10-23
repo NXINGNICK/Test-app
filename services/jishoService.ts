@@ -96,7 +96,17 @@ export const getWordDetails = async (word: string): Promise<WordToken> => {
         wordCache.set(word, null);
         return createDefaultToken(word);
     } catch (error) {
-        console.error(`Error fetching from Jisho API for "${word}":`, error);
+        // This block will catch errors from fetch(), response.json(), or JSON.parse().
+        if (error instanceof SyntaxError) {
+            // This is a JSON parsing error, most likely from the proxy returning an HTML error page.
+            console.warn(`Jisho API response for "${word}" was not valid JSON. The proxy may be down or rate-limited.`);
+        } else if (error instanceof Error) {
+            // This could be a network error or something else.
+            console.error(`An error occurred while fetching details for "${word}": ${error.message}`);
+        } else {
+            console.error(`An unknown error occurred while fetching details for "${word}":`, error);
+        }
+        
         wordCache.set(word, null);
         return createDefaultToken(word);
     }

@@ -82,12 +82,6 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
       return (
         <div>
           {isRevealed ? renderJapaneseTokens(s.tokens) : <p className="text-3xl mb-2 font-light tracking-wide text-theme-text">{s.japanese}</p>}
-          {isRevealed && (
-            <div className="mt-4 pt-4 border-t border-theme-border/50 space-y-2">
-              <p className="text-theme-accent text-lg">{s.hiragana}</p>
-              <p className="text-theme-text-muted text-base italic">"{s.english}"</p>
-            </div>
-          )}
         </div>
       );
     } else {

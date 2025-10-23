@@ -26,8 +26,6 @@ export interface VocabularyItem extends WordToken {
 
 export interface JapaneseSentence {
   japanese: string;
-  hiragana: string;
-  english: string;
   tokens: WordToken[];
 }
 
@@ -50,8 +48,6 @@ export enum GenerationMode {
 // Types for raw data from Gemini before enrichment
 export interface GeminiJapaneseSentence {
   japanese: string;
-  hiragana: string;
-  english: string;
   tokens: string[]; // Just word strings
 }
 

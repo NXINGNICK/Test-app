@@ -50,16 +50,14 @@ const simplifiedJapaneseSentenceSchema = {
   items: {
     type: Type.OBJECT,
     properties: {
-      japanese: { type: Type.STRING, description: "The sentence in Japanese using Kanji." },
-      hiragana: { type: Type.STRING, description: "The Hiragana reading of the sentence." },
-      english: { type: Type.STRING, description: "The English translation of the sentence." },
+      japanese: { type: Type.STRING, description: "A longer, natural-sounding sentence in Japanese (around 15-25 words) using Kanji." },
       tokens: {
         type: Type.ARRAY,
         items: { type: Type.STRING },
         description: "A tokenized breakdown of the Japanese sentence into its component words/particles. CRITICAL: Compound words (e.g., 'お客様'), conjugated verbs (e.g., '食べました'), and i-adjectives (e.g., '新しい') MUST be single tokens. Example: ['私', 'は', '学生', 'です', '。']"
       }
     },
-    required: ["japanese", "hiragana", "english", "tokens"],
+    required: ["japanese", "tokens"],
   },
 };
 
@@ -71,7 +69,7 @@ export const generateJapaneseSentences = async (kanji: Kanji[], targetJlptLevel?
     ? `The vocabulary and grammar used, excluding the provided Kanji list, should be appropriate for a JLPT N${targetJlptLevel} learner. The overall sentence structure should feel natural for this level.`
     : `The sentences should be at an intermediate level (around JLPT N4 to N3).`;
 
-  const prompt = `Create 5 distinct, natural-sounding Japanese sentences. ${levelInstruction} You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice. For each sentence, also provide a tokenized breakdown of the Japanese sentence into its component words and particles (as an array of strings). It is crucial that compound words (like お客様), conjugated verbs (like 食べました), and adjectives are treated as single tokens. Do NOT include definitions or readings for the tokens.`;
+  const prompt = `Create 5 distinct, natural-sounding, longer Japanese sentences (around 15-25 words if possible). ${levelInstruction} You MUST incorporate some of the following Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list as they are the most important for the user to practice. For each sentence, also provide a tokenized breakdown of the Japanese sentence into its component words and particles (as an array of strings). It is crucial that compound words (like お客様), conjugated verbs (like 食べました), and adjectives are treated as single tokens. Do NOT include definitions or readings for the tokens.`;
   console.debug("geminiService: Sending prompt to Gemini for Japanese sentences:", prompt);
 
   try {
@@ -100,7 +98,7 @@ const simplifiedEnglishSentenceSchema = {
     items: {
       type: Type.OBJECT,
       properties: {
-        english: { type: Type.STRING, description: "An English sentence incorporating the meaning of a Kanji." },
+        english: { type: Type.STRING, description: "A longer, descriptive English sentence incorporating the meaning of a Kanji." },
         japanese: { type: Type.STRING, description: "A natural Japanese translation of the English sentence, using the original Kanji." },
         tokens: {
             type: Type.ARRAY,
@@ -120,7 +118,7 @@ export const generateEnglishSentences = async (kanji: Kanji[], targetJlptLevel?:
         ? `The English sentences should be suitable for a JLPT N${targetJlptLevel} learner's comprehension level. The corresponding Japanese translations MUST also use vocabulary and grammar appropriate for this level (excluding the provided Kanji).`
         : `The English sentences should be at an intermediate level. The corresponding Japanese translations should be around JLPT N4 to N3 level.`;
 
-    const prompt = `Create 5 distinct English sentences. ${levelInstruction} Each English sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji. Also provide a tokenized breakdown of the Japanese translation into its component words/particles (as an array of strings). It is crucial that compound words (like お客様), conjugated verbs (like 食べました), and adjectives are treated as single tokens. Do NOT include definitions or readings for the tokens.`;
+    const prompt = `Create 5 distinct, longer, and more descriptive English sentences. ${levelInstruction} Each English sentence should subtly incorporate the meaning of one or more of the following Japanese Kanji: ${kanjiChars}. Prioritize the first few Kanji in the list. For each English sentence, provide a natural Japanese translation that uses the source Kanji. Also provide a tokenized breakdown of the Japanese translation into its component words/particles (as an array of strings). It is crucial that compound words (like お客様), conjugated verbs (like 食べました), and adjectives are treated as single tokens. Do NOT include definitions or readings for the tokens.`;
     console.debug("geminiService: Sending prompt to Gemini for English sentences:", prompt);
 
     try {
