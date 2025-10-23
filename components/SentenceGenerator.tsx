@@ -13,13 +13,15 @@ interface SentenceGeneratorProps {
   onUpdateKanjiUsage: (characters: string[]) => void;
   onUpdateKanjiReview: (characters: string[], performance: 'correct' | 'incorrect') => void;
   onAddVocabularyItem: (word: WordToken) => void;
+  onAddKatakanaItem: (word: WordToken) => void;
   onAddKanji: (text: string) => Promise<number>;
 }
 
 const MASTERED_SRS_LEVEL = 7; 
 const PROMPT_KANJI_LIMIT = 10;
+const KATAKANA_ONLY_REGEX = /^[ァ-ヶー]+$/;
 
-const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabList, onUpdateKanjiUsage, onUpdateKanjiReview, onAddVocabularyItem, onAddKanji }) => {
+const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabList, onUpdateKanjiUsage, onUpdateKanjiReview, onAddVocabularyItem, onAddKatakanaItem, onAddKanji }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +30,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
   const [jlptFilter, setJlptFilter] = useState<number>(0);
   const [selectedWord, setSelectedWord] = useState<WordToken | null>(null);
   const [sessionInProgress, setSessionInProgress] = useState(false);
+  const [revealedSentences, setRevealedSentences] = useState<Set<string>>(new Set());
   
   const selectKanjiForPrompt = (): Kanji[] => {
     const now = Date.now();
@@ -64,6 +67,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
     setIsLoading(true);
     setError(null);
     setSentences([]);
+    setRevealedSentences(new Set());
 
     try {
       let targetLevel: number | undefined;
@@ -115,6 +119,14 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
     }
   };
 
+  const handleAddWordToLibrary = (wordToken: WordToken) => {
+    if (KATAKANA_ONLY_REGEX.test(wordToken.word)) {
+      onAddKatakanaItem(wordToken);
+    } else {
+      onAddVocabularyItem(wordToken);
+    }
+  };
+
   const StartSessionScreen = () => (
     <div className="text-center max-w-lg mx-auto">
         <h2 className="text-3xl font-bold text-theme-text mb-2">Ready to Learn?</h2>
@@ -162,7 +174,26 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
         </div>
         <div className="space-y-4">
             {sentences.map((sentenceWithContext) => (
-            <SentenceCard key={sentenceWithContext.sentence.japanese} sentenceWithContext={sentenceWithContext} mode={sessionMode!} onUpdateReview={onUpdateKanjiReview} onWordClick={setSelectedWord} />
+            <SentenceCard 
+                key={sentenceWithContext.sentence.japanese} 
+                sentenceWithContext={sentenceWithContext} 
+                mode={sessionMode!} 
+                onUpdateReview={onUpdateKanjiReview} 
+                onWordClick={setSelectedWord}
+                isRevealed={revealedSentences.has(sentenceWithContext.sentence.japanese)}
+                onToggleReveal={() => {
+                    const key = sentenceWithContext.sentence.japanese;
+                    setRevealedSentences(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(key)) {
+                            newSet.delete(key);
+                        } else {
+                            newSet.add(key);
+                        }
+                        return newSet;
+                    });
+                }}
+            />
             ))}
         </div>
     </div>
@@ -189,7 +220,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
         onClose={() => setSelectedWord(null)}
         kanjiList={kanjiList}
         vocabList={vocabList}
-        onAddVocabulary={onAddVocabularyItem}
+        onAddVocabulary={handleAddWordToLibrary}
         onAddKanji={onAddKanji}
       />
     </div>

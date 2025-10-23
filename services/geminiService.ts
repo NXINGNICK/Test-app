@@ -45,54 +45,6 @@ export const extractKanjiFromImage = async (base64Image: string): Promise<string
     }
 };
 
-const jlptSchema = {
-    type: Type.OBJECT,
-    properties: {
-        kanjiDetails: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    character: { type: Type.STRING },
-                    jlpt: { type: Type.INTEGER, description: "JLPT level (5, 4, 3, 2, 1). Return 0 if not in JLPT." }
-                },
-                required: ["character", "jlpt"]
-            }
-        }
-    }
-};
-
-export const getKanjiJlptLevels = async (characters: string[]): Promise<Record<string, number>> => {
-    console.debug("geminiService: getKanjiJlptLevels called with:", characters);
-    if (characters.length === 0) return {};
-    const prompt = `For the following Kanji characters, provide their JLPT level: ${characters.join(', ')}. If a character is not part of the JLPT system, use 0 for its level.`;
-    console.debug("geminiService: Sending prompt to Gemini for JLPT levels:", prompt);
-    try {
-        const response = await model.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: jlptSchema
-            }
-        });
-        console.debug("geminiService: Raw response from JLPT levels:", response.text);
-        const json = JSON.parse(response.text.trim());
-        console.debug("geminiService: Parsed JSON for JLPT levels:", json);
-        const levels: Record<string, number> = {};
-        if (json.kanjiDetails) {
-            for (const detail of json.kanjiDetails) {
-                levels[detail.character] = detail.jlpt;
-            }
-        }
-        console.debug("geminiService: Final JLPT levels object:", levels);
-        return levels;
-    } catch (error) {
-        console.error("Error fetching JLPT levels:", error);
-        throw new Error("Failed to fetch JLPT levels from Gemini API.");
-    }
-};
-
 const simplifiedJapaneseSentenceSchema = {
   type: Type.ARRAY,
   items: {

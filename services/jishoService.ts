@@ -55,21 +55,30 @@ export const getWordDetails = async (word: string): Promise<WordToken> => {
         const json = await response.json();
 
         if (json.data && json.data.length > 0) {
-            // Find the best match, often the one that is an exact word match
-            const bestMatch = json.data.find((d: any) => d.japanese.some((j: any) => j.word === word)) || json.data[0];
-            
-            const token: WordToken = {
-                word: word, // Use original word from sentence for consistency
-                reading: bestMatch.japanese[0]?.reading || word,
-                definition: bestMatch.senses[0]?.english_definitions.join('; ') || 'No definition found.',
-                jlptLevel: parseJlptLevel(bestMatch.jlpt),
-            };
-            wordCache.set(word, token);
-            return token;
-        } else {
-             wordCache.set(word, null); // Cache the miss
-             return createDefaultToken(word);
+            // Prioritize common words and exact matches for better accuracy.
+            const sortedData = [...json.data].sort((a: any, b: any) => (b.is_common ? 1 : 0) - (a.is_common ? 1 : 0));
+            const bestMatch = sortedData.find((d: any) => d.japanese.some((j: any) => j.word === word || j.reading === word)) || sortedData[0];
+
+            const reading = bestMatch.japanese[0]?.reading;
+            const sense = bestMatch.senses[0];
+            const definition = sense?.english_definitions?.join('; ');
+
+            // Only create a full token if we have the essential data.
+            if (reading && definition) {
+                 const token: WordToken = {
+                    word: word,
+                    reading: reading,
+                    definition: definition,
+                    jlptLevel: parseJlptLevel(bestMatch.jlpt || []),
+                };
+                wordCache.set(word, token);
+                return token;
+            }
         }
+
+        // If no suitable match was found after all checks, return the default token.
+        wordCache.set(word, null);
+        return createDefaultToken(word);
     } catch (error) {
         console.error(`Error fetching from Jisho API for "${word}":`, error);
         wordCache.set(word, null);

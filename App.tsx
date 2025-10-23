@@ -6,10 +6,13 @@ import { useKanjiLibrary } from './hooks/useKanjiLibrary';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThemeCustomizer from './components/ThemeCustomizer';
 import { useVocabularyLibrary } from './hooks/useVocabularyLibrary';
+import { useKatakanaLibrary } from './hooks/useKatakanaLibrary';
+import { Kanji } from './types';
 
 const App: React.FC = () => {
-  const { kanjiList, addKanji, deleteKanji, updateKanjiUsage, isLoading, addKanjiFromImage, updateKanjiReview } = useKanjiLibrary();
+  const { kanjiList, addKanji, deleteKanji, updateKanjiUsage, isLoading, addKanjiFromImage, updateKanjiReview, updateKanjiProperty } = useKanjiLibrary();
   const { vocabList, addVocabularyItem, deleteVocabularyItem } = useVocabularyLibrary();
+  const { katakanaList, addKatakanaItem, deleteKatakanaItem } = useKatakanaLibrary();
   const [isThemeCustomizerOpen, setIsThemeCustomizerOpen] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(true);
 
@@ -26,6 +29,9 @@ const App: React.FC = () => {
             isLoading={isLoading}
             vocabList={vocabList}
             onDeleteVocabularyItem={deleteVocabularyItem}
+            katakanaList={katakanaList}
+            onDeleteKatakanaItem={deleteKatakanaItem}
+            onUpdateKanjiProperty={updateKanjiProperty}
         />
         <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isLibraryOpen ? 'lg:ml-[384px]' : 'ml-0'}`}>
             <Header 
@@ -40,6 +46,7 @@ const App: React.FC = () => {
                 onUpdateKanjiReview={updateKanjiReview}
                 vocabList={vocabList}
                 onAddVocabularyItem={addVocabularyItem}
+                onAddKatakanaItem={addKatakanaItem}
                 onAddKanji={addKanji}
               />
             </main>

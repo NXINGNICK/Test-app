@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Kanji } from '../types';
-import { extractKanjiFromImage as geminiExtractKanjiFromImage, getKanjiJlptLevels } from '../services/geminiService';
+import { extractKanjiFromImage as geminiExtractKanjiFromImage } from '../services/geminiService';
+import { getKanjiDetailsFromKanjiApi } from '../services/jishoService';
 
 const KANJI_STORAGE_KEY = 'kanjiLibrary';
 const KANJI_REGEX = /[\u4e00-\u9faf\u3400-\u4dbf]/g;
@@ -53,24 +54,30 @@ export const useKanjiLibrary = () => {
         console.debug("useKanjiLibrary: Found new unique Kanji characters:", newKanjiChars);
 
         if (newKanjiChars.length > 0) {
-            console.debug("useKanjiLibrary: Fetching JLPT levels for new Kanji.");
-            const jlptLevels = await getKanjiJlptLevels(newKanjiChars);
-            console.debug("useKanjiLibrary: Received JLPT levels:", jlptLevels);
+            console.debug("useKanjiLibrary: Fetching details for new Kanji from dictionary API.");
+            const kanjiDetailsPromises = newKanjiChars.map(char => getKanjiDetailsFromKanjiApi(char));
+            const kanjiDetails = await Promise.all(kanjiDetailsPromises);
+
             const timestamp = Date.now();
-            const newKanji: Kanji[] = newKanjiChars.map(character => ({
-                character,
-                addedAt: timestamp,
-                usedCount: 0,
-                lastUsedAt: 0,
-                jlptLevel: jlptLevels[character] > 0 ? jlptLevels[character] : null,
-                srsLevel: 0,
-                nextReviewAt: timestamp,
-                lastReviewedAt: 0,
-                correctStreak: 0,
-            }));
+            const newKanji: Kanji[] = newKanjiChars.map((character, index) => {
+                const details = kanjiDetails[index];
+                return {
+                    character,
+                    addedAt: timestamp,
+                    usedCount: 0,
+                    lastUsedAt: 0,
+                    jlptLevel: details?.jlpt || null,
+                    srsLevel: 0,
+                    nextReviewAt: timestamp,
+                    lastReviewedAt: 0,
+                    correctStreak: 0,
+                };
+            });
           
-          console.debug("useKanjiLibrary: Saving new Kanji to list:", newKanji);
-          saveKanjiList([...kanjiList, ...newKanji]);
+            if (newKanji.length > 0) {
+              console.debug("useKanjiLibrary: Saving new Kanji to list:", newKanji);
+              saveKanjiList([...kanjiList, ...newKanji]);
+            }
         }
         return newKanjiChars.length;
     } catch (error) {
@@ -88,6 +95,7 @@ export const useKanjiLibrary = () => {
       console.debug("useKanjiLibrary: Calling Gemini to extract Kanji from image.");
       const extractedKanjiText = (await geminiExtractKanjiFromImage(base64Image)).join('');
       console.debug("useKanjiLibrary: Extracted Kanji text from image:", extractedKanjiText);
+      // The optimized addKanji function will handle the result efficiently.
       return await addKanji(extractedKanjiText);
     } catch (error) {
       console.error("Failed to extract or add Kanji from image:", error);
@@ -149,7 +157,18 @@ export const useKanjiLibrary = () => {
     });
     saveKanjiList(updatedList);
   };
+  
+  const updateKanjiProperty = useCallback((character: string, updates: Partial<Kanji>) => {
+    console.debug(`useKanjiLibrary: updateKanjiProperty called for: ${character} with updates:`, updates);
+    const updatedList = kanjiList.map(kanji => {
+      if (kanji.character === character) {
+        return { ...kanji, ...updates };
+      }
+      return kanji;
+    });
+    saveKanjiList(updatedList);
+  }, [kanjiList]);
 
 
-  return { kanjiList, addKanji, deleteKanji, updateKanjiUsage, isLoading, addKanjiFromImage, updateKanjiReview };
+  return { kanjiList, addKanji, deleteKanji, updateKanjiUsage, isLoading, addKanjiFromImage, updateKanjiReview, updateKanjiProperty };
 };

@@ -7,6 +7,7 @@ import { CloseIcon, SpinnerIcon } from './icons';
 interface KanjiDetailModalProps {
   kanji: Kanji | null;
   onClose: () => void;
+  onUpdateKanjiProperty: (character: string, updates: Partial<Kanji>) => void;
 }
 
 const RadicalCharacter: React.FC<{ radical: WaniKaniRadical }> = ({ radical }) => {
@@ -17,7 +18,7 @@ const RadicalCharacter: React.FC<{ radical: WaniKaniRadical }> = ({ radical }) =
         img => img.content_type === 'image/svg+xml' && img.metadata.style_name === 'original'
     );
     if (svgImage) {
-        const svgContent = `<svg xmlns="http://www.w.org/2000/svg" viewBox="0 0 1024 1024" className="w-full h-full" style="filter: invert(1);"><g>${svgImage.url.substring(svgImage.url.indexOf('<path'))}</g></svg>`;
+        const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" className="w-full h-full" style="filter: invert(1);"><g>${svgImage.url.substring(svgImage.url.indexOf('<path'))}</g></svg>`;
         return <div className="w-6 h-6" dangerouslySetInnerHTML={{ __html: svgContent }} />;
     }
     return null;
@@ -133,22 +134,27 @@ const FallbackDataView: React.FC<{ data: KanjiApiData }> = ({ data }) => {
     )
 };
 
-const KanjiDetailsView: React.FC<{ character: string; onClose: () => void }> = ({ character, onClose }) => {
-    const waniKani = useWaniKaniData(character);
+const KanjiDetailsView: React.FC<{ kanji: Kanji; onClose: () => void; onUpdateKanjiProperty: (character: string, updates: Partial<Kanji>) => void; }> = ({ kanji, onClose, onUpdateKanjiProperty }) => {
+    const waniKani = useWaniKaniData(kanji.character);
     const [fallbackData, setFallbackData] = useState<KanjiApiData | null>(null);
     const [isFallbackLoading, setIsFallbackLoading] = useState(false);
 
     useEffect(() => {
         const fetchFallback = async () => {
+            // Only fetch if WaniKani lookup failed and we haven't already fetched fallback data.
             if (waniKani.error && !waniKani.isLoading && !fallbackData) {
                 setIsFallbackLoading(true);
-                const data = await getKanjiDetailsFromKanjiApi(character);
+                const data = await getKanjiDetailsFromKanjiApi(kanji.character);
                 setFallbackData(data);
+                // Auto-correct the JLPT level in the main library if a discrepancy is found.
+                if (data && data.jlpt && data.jlpt !== kanji.jlptLevel) {
+                    onUpdateKanjiProperty(kanji.character, { jlptLevel: data.jlpt });
+                }
                 setIsFallbackLoading(false);
             }
         };
         fetchFallback();
-    }, [waniKani.error, waniKani.isLoading, character, fallbackData]);
+    }, [waniKani.error, waniKani.isLoading, kanji, fallbackData, onUpdateKanjiProperty]);
 
     if (waniKani.isLoading || isFallbackLoading) {
         return <div className="flex flex-col items-center justify-center text-center p-8 gap-4"><SpinnerIcon /><p>Loading Kanji data...</p></div>;
@@ -174,7 +180,7 @@ const KanjiDetailsView: React.FC<{ character: string; onClose: () => void }> = (
     return null;
 };
 
-const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({ kanji, onClose }) => {
+const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({ kanji, onClose, onUpdateKanjiProperty }) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -191,7 +197,7 @@ const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({ kanji, onClose }) =
         <button onClick={onClose} className="absolute top-3 right-3 text-theme-text-muted hover:text-theme-text transition-colors" aria-label="Close details">
           <CloseIcon />
         </button>
-        <KanjiDetailsView character={kanji.character} onClose={onClose} />
+        <KanjiDetailsView kanji={kanji} onClose={onClose} onUpdateKanjiProperty={onUpdateKanjiProperty} />
       </div>
     </div>
   );

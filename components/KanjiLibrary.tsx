@@ -8,33 +8,17 @@ interface KanjiLibraryProps {
   onClose: () => void;
   kanjiList: Kanji[];
   vocabList: VocabularyItem[];
+  katakanaList: VocabularyItem[];
   onAddKanji: (text: string) => Promise<number>;
   onDeleteKanji: (character: string) => void;
   onDeleteVocabularyItem: (word: string) => void;
+  onDeleteKatakanaItem: (word: string) => void;
   onAddKanjiFromImage: (base64Image: string) => Promise<number>;
   isLoading: boolean;
+  onUpdateKanjiProperty: (character: string, updates: Partial<Kanji>) => void;
 }
 
 const MASTERED_SRS_LEVEL = 7;
-
-const KATAKANA_LIST = [
-  'ア', 'イ', 'ウ', 'エ', 'オ',
-  'カ', 'キ', 'ク', 'ケ', 'コ',
-  'サ', 'シ', 'ス', 'セ', 'ソ',
-  'タ', 'チ', 'ツ', 'テ', 'ト',
-  'ナ', 'ニ', 'ヌ', 'ネ', 'ノ',
-  'ハ', 'ヒ', 'フ', 'ヘ', 'ホ',
-  'マ', 'ミ', 'ム', 'メ', 'モ',
-  'ヤ', 'ユ', 'ヨ',
-  'ラ', 'リ', 'ル', 'レ', 'ロ',
-  'ワ', 'ヲ', 'ン',
-  'ガ', 'ギ', 'グ', 'ゲ', 'ゴ',
-  'ザ', 'ジ', 'ズ', 'ゼ', 'ゾ',
-  'ダ', 'ヂ', 'ヅ', 'デ', 'ド',
-  'バ', 'ビ', 'ブ', 'ベ', 'ボ',
-  'パ', 'ピ', 'プ', 'ペ', 'ポ'
-];
-
 
 const KanjiStatusIndicator: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
     const now = Date.now();
@@ -67,7 +51,7 @@ const KanjiStatusIndicator: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
 };
 
 
-const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList, vocabList, onAddKanji, onDeleteKanji, onDeleteVocabularyItem, onAddKanjiFromImage, isLoading }) => {
+const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList, vocabList, katakanaList, onAddKanji, onDeleteKanji, onDeleteVocabularyItem, onDeleteKatakanaItem, onAddKanjiFromImage, isLoading, onUpdateKanjiProperty }) => {
   const [inputValue, setInputValue] = useState('');
   const [feedback, setFeedback] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,8 +109,13 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
   }, [vocabList, searchTerm]);
   
   const filteredKatakanaList = useMemo(() => {
-    return KATAKANA_LIST.filter(k => k.includes(searchTerm));
-  }, [searchTerm]);
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return katakanaList.filter(v => 
+        v.word.toLowerCase().includes(lowercasedTerm) || 
+        v.reading.toLowerCase().includes(lowercasedTerm) ||
+        v.definition.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [katakanaList, searchTerm]);
 
   const TabButton: React.FC<{ label: string; isActive: boolean; onClick: () => void }> = ({ label, isActive, onClick }) => (
     <button
@@ -149,7 +138,7 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
             <div className="bg-theme-border rounded-lg p-1 flex mb-4">
                 <TabButton label={`Kanji (${kanjiList.length})`} isActive={activeTab === 'kanji'} onClick={() => setActiveTab('kanji')} />
                 <TabButton label={`Vocabulary (${vocabList.length})`} isActive={activeTab === 'vocab'} onClick={() => setActiveTab('vocab')} />
-                <TabButton label="Katakana" isActive={activeTab === 'katakana'} onClick={() => setActiveTab('katakana')} />
+                <TabButton label={`Katakana (${katakanaList.length})`} isActive={activeTab === 'katakana'} onClick={() => setActiveTab('katakana')} />
             </div>
             
             <div className="relative mb-4">
@@ -215,21 +204,25 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
             ) : (
                  <div className="flex-grow overflow-y-auto pr-2 -mr-4 custom-scrollbar">
                     {filteredKatakanaList.length === 0 ? (
-                        <div className="text-center text-theme-text-muted pt-8">No Katakana match your search.</div>
+                        <div className="text-center text-theme-text-muted pt-8">{katakanaList.length > 0 ? 'No Katakana words match your search.' : 'Your Katakana library is empty.'}</div>
                     ) : (
-                        <div className="grid grid-cols-5 gap-2">
-                        {filteredKatakanaList.map((char) => (
-                            <div key={char} className="bg-theme-bg rounded-md p-2 flex items-center justify-center aspect-square shadow-md">
-                                <span className="text-3xl text-theme-text">{char}</span>
-                            </div>
-                        ))}
+                        <div className="space-y-2">
+                            {filteredKatakanaList.map(item => (
+                                <div key={item.word} className="bg-theme-bg p-3 rounded-md flex justify-between items-start gap-2">
+                                    <div className="flex-1">
+                                        <p className="text-lg text-theme-text">{item.word} <span className="text-sm text-theme-accent ml-2">{item.reading}</span></p>
+                                        <p className="text-sm text-theme-text-muted italic">"{item.definition}"</p>
+                                    </div>
+                                    <button onClick={() => onDeleteKatakanaItem(item.word)} className="text-red-400/70 hover:text-red-400 p-1" aria-label={`Delete vocabulary ${item.word}`}><TrashIcon/></button>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
             )}
         </div>
       </aside>
-      <KanjiDetailModal kanji={selectedKanji} onClose={() => setSelectedKanji(null)} />
+      <KanjiDetailModal kanji={selectedKanji} onClose={() => setSelectedKanji(null)} onUpdateKanjiProperty={onUpdateKanjiProperty} />
     </>
   );
 };
