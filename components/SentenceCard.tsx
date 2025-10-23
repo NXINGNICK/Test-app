@@ -45,7 +45,7 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
         return (
             <button 
                 key={i} 
-                className={`hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30 font-semibold ${getJlptColorClass(token.jlptLevel)}`}
+                className={`hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30 ${getJlptColorClass(token.jlptLevel)}`}
                 onClick={() => onWordClick(token)}
                 aria-label={`View details for ${token.word}`}
                 title={token.jlptLevel > 0 ? `JLPT N${token.jlptLevel}` : 'Common word'}

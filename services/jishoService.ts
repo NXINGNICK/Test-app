@@ -54,51 +54,28 @@ export const getWordDetails = async (word: string): Promise<WordToken> => {
         
         const json = await response.json();
 
+        // If we get any data, trust the first result from Jisho.
+        // Jisho is good at returning the dictionary form for conjugated words.
         if (json.data && json.data.length > 0) {
-            const sortedData = [...json.data].sort((a: any, b: any) => (b.is_common ? 1 : 0) - (a.is_common ? 1 : 0));
+            const result = json.data[0]; // Take the most relevant result
             
-            // First, try to find a perfect match.
-            const bestMatch = sortedData.find((d: any) => d.japanese.some((j: any) => j.word === word || j.reading === word));
+            const reading = result.japanese[0]?.reading;
+            const sense = result.senses[0];
+            const definition = sense?.english_definitions?.join('; ');
 
-            if (bestMatch) {
-                const japaneseForm = bestMatch.japanese.find((j:any) => j.word === word || j.reading === word) || bestMatch.japanese[0];
-                const reading = japaneseForm?.reading;
-                const sense = bestMatch.senses[0];
-                const definition = sense?.english_definitions?.join('; ');
-
-                if (reading && definition) {
-                    const token: WordToken = {
-                        word: word,
-                        reading: reading,
-                        definition: definition,
-                        jlptLevel: parseJlptLevel(bestMatch.jlpt || []),
-                    };
-                    wordCache.set(word, token);
-                    return token;
-                }
-            }
-            
-            // If no perfect match was found (common for conjugated verbs), fall back to the first result.
-            const firstResult = sortedData[0];
-            if (firstResult) {
-                const reading = firstResult.japanese[0]?.reading;
-                const sense = firstResult.senses[0];
-                const definition = sense?.english_definitions?.join('; ');
-
-                if (reading && definition) {
-                    const token: WordToken = {
-                        word: word, // Keep original inflected word
-                        reading: reading, // But use reading/definition of the dictionary form
-                        definition: definition,
-                        jlptLevel: parseJlptLevel(firstResult.jlpt || []),
-                    };
-                    wordCache.set(word, token);
-                    return token;
-                }
+            if (reading && definition) {
+                const token: WordToken = {
+                    word: word, // Keep the original word (e.g., 食べました)
+                    reading: reading, // Use reading from dictionary form (e.g., たべる)
+                    definition: definition, // Use definition from dictionary form
+                    jlptLevel: parseJlptLevel(result.jlpt || []),
+                };
+                wordCache.set(word, token);
+                return token;
             }
         }
 
-        // If no suitable match was found after all checks, return the default token.
+        // If no result or malformed result, return default.
         wordCache.set(word, null);
         return createDefaultToken(word);
     } catch (error) {
