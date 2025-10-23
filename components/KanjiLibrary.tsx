@@ -17,6 +17,25 @@ interface KanjiLibraryProps {
 
 const MASTERED_SRS_LEVEL = 7;
 
+const KATAKANA_LIST = [
+  'ア', 'イ', 'ウ', 'エ', 'オ',
+  'カ', 'キ', 'ク', 'ケ', 'コ',
+  'サ', 'シ', 'ス', 'セ', 'ソ',
+  'タ', 'チ', 'ツ', 'テ', 'ト',
+  'ナ', 'ニ', 'ヌ', 'ネ', 'ノ',
+  'ハ', 'ヒ', 'フ', 'ヘ', 'ホ',
+  'マ', 'ミ', 'ム', 'メ', 'モ',
+  'ヤ', 'ユ', 'ヨ',
+  'ラ', 'リ', 'ル', 'レ', 'ロ',
+  'ワ', 'ヲ', 'ン',
+  'ガ', 'ギ', 'グ', 'ゲ', 'ゴ',
+  'ザ', 'ジ', 'ズ', 'ゼ', 'ゾ',
+  'ダ', 'ヂ', 'ヅ', 'デ', 'ド',
+  'バ', 'ビ', 'ブ', 'ベ', 'ボ',
+  'パ', 'ピ', 'プ', 'ペ', 'ポ'
+];
+
+
 const KanjiStatusIndicator: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
     const now = Date.now();
     let status: 'mastered' | 'learning' | 'due' | 'new' | 'leech' = 'mastered';
@@ -53,7 +72,7 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
   const [feedback, setFeedback] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKanji, setSelectedKanji] = useState<Kanji | null>(null);
-  const [activeTab, setActiveTab] = useState<'kanji' | 'vocab'>('kanji');
+  const [activeTab, setActiveTab] = useState<'kanji' | 'vocab' | 'katakana'>('kanji');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +123,10 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
         v.definition.toLowerCase().includes(lowercasedTerm)
     );
   }, [vocabList, searchTerm]);
+  
+  const filteredKatakanaList = useMemo(() => {
+    return KATAKANA_LIST.filter(k => k.includes(searchTerm));
+  }, [searchTerm]);
 
   const TabButton: React.FC<{ label: string; isActive: boolean; onClick: () => void }> = ({ label, isActive, onClick }) => (
     <button
@@ -126,6 +149,7 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
             <div className="bg-theme-border rounded-lg p-1 flex mb-4">
                 <TabButton label={`Kanji (${kanjiList.length})`} isActive={activeTab === 'kanji'} onClick={() => setActiveTab('kanji')} />
                 <TabButton label={`Vocabulary (${vocabList.length})`} isActive={activeTab === 'vocab'} onClick={() => setActiveTab('vocab')} />
+                <TabButton label="Katakana" isActive={activeTab === 'katakana'} onClick={() => setActiveTab('katakana')} />
             </div>
             
             <div className="relative mb-4">
@@ -170,7 +194,7 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
                         )}
                     </div>
                 </div>
-            ) : (
+            ) : activeTab === 'vocab' ? (
                 <div className="flex-grow overflow-y-auto pr-2 -mr-4 custom-scrollbar">
                     {filteredVocabList.length === 0 ? (
                         <div className="text-center text-theme-text-muted pt-8">{vocabList.length > 0 ? 'No vocabulary match your search.' : 'Your vocabulary is empty.'}</div>
@@ -185,6 +209,20 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ isOpen, onClose, kanjiList,
                                     <button onClick={() => onDeleteVocabularyItem(item.word)} className="text-red-400/70 hover:text-red-400 p-1" aria-label={`Delete vocabulary ${item.word}`}><TrashIcon/></button>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                 <div className="flex-grow overflow-y-auto pr-2 -mr-4 custom-scrollbar">
+                    {filteredKatakanaList.length === 0 ? (
+                        <div className="text-center text-theme-text-muted pt-8">No Katakana match your search.</div>
+                    ) : (
+                        <div className="grid grid-cols-5 gap-2">
+                        {filteredKatakanaList.map((char) => (
+                            <div key={char} className="bg-theme-bg rounded-md p-2 flex items-center justify-center aspect-square shadow-md">
+                                <span className="text-3xl text-theme-text">{char}</span>
+                            </div>
+                        ))}
                         </div>
                     )}
                 </div>

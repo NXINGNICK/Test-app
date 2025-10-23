@@ -10,6 +10,17 @@ interface SentenceCardProps {
   onWordClick: (word: WordToken) => void;
 }
 
+const getJlptColorClass = (level: number): string => {
+  switch (level) {
+    case 5: return 'decoration-orange-400'; // N5
+    case 4: return 'decoration-green-400';  // N4
+    case 3: return 'decoration-sky-400';    // N3
+    case 2: return 'decoration-purple-400'; // N2
+    case 1: return 'decoration-pink-500';   // N1
+    default: return 'decoration-theme-border/50'; // Default/no level
+  }
+};
+
 const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, onUpdateReview, onWordClick }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
@@ -28,9 +39,10 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
       {tokens.map((token, i) => (
         <button 
           key={i} 
-          className="hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30"
+          className={`hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30 underline ${getJlptColorClass(token.jlptLevel)} hover:decoration-theme-accent/70 decoration-2 underline-offset-4`}
           onClick={() => onWordClick(token)}
           aria-label={`View details for ${token.word}`}
+          title={token.jlptLevel > 0 ? `JLPT N${token.jlptLevel}` : 'Common word'}
         >
           {token.word}
         </button>

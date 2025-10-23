@@ -17,6 +17,7 @@ export interface WordToken {
   word: string;
   reading: string;
   definition: string;
+  jlptLevel: number;
 }
 
 export interface VocabularyItem extends WordToken {
@@ -45,6 +46,21 @@ export enum GenerationMode {
   Japanese = 'JAPANESE',
   English = 'ENGLISH',
 }
+
+// Types for raw data from Gemini before enrichment
+export interface GeminiJapaneseSentence {
+  japanese: string;
+  hiragana: string;
+  english: string;
+  tokens: string[]; // Just word strings
+}
+
+export interface GeminiEnglishSentence {
+  english: string;
+  japanese: string;
+  tokens: string[]; // Just word strings
+}
+
 
 // --- WaniKani API Types ---
 
@@ -158,4 +174,17 @@ export interface EnrichedKanjiData {
   kanji: WaniKaniKanji;
   radicals: WaniKaniRadical[];
   vocabulary: WaniKaniVocabulary[];
+}
+
+// --- KanjiAPI.dev Types ---
+export interface KanjiApiData {
+  kanji: string;
+  grade: number | null;
+  stroke_count: number;
+  meanings: string[];
+  kun_readings: string[];
+  on_readings: string[];
+  name_readings: string[];
+  jlpt: number | null;
+  unicode: string;
 }

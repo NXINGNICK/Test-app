@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import type { Kanji, JapaneseSentence, EnglishSentence, SentenceWithContext, VocabularyItem, WordToken } from '../types';
+import type { Kanji, JapaneseSentence, EnglishSentence, SentenceWithContext, VocabularyItem, WordToken, GeminiJapaneseSentence, GeminiEnglishSentence } from '../types';
 import { GenerationMode } from '../types';
 import { generateJapaneseSentences, generateEnglishSentences } from '../services/geminiService';
+import { getWordDetails } from '../services/jishoService';
 import SentenceCard from './SentenceCard';
 import WordDetailModal from './WordDetailModal';
 import { SpinnerIcon, RefreshIcon } from './icons';
@@ -20,6 +21,7 @@ const PROMPT_KANJI_LIMIT = 10;
 
 const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabList, onUpdateKanjiUsage, onUpdateKanjiReview, onAddVocabularyItem, onAddKanji }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sentences, setSentences] = useState<SentenceWithContext[]>([]);
   const [sessionMode, setSessionMode] = useState<GenerationMode>(GenerationMode.Japanese);
@@ -75,16 +77,27 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
         }
       }
 
-      let result: (JapaneseSentence | EnglishSentence)[];
+      let geminiResult: (GeminiJapaneseSentence | GeminiEnglishSentence)[];
       
+      setLoadingMessage('Generating sentences with AI...');
       if (sessionMode === GenerationMode.Japanese) {
-        result = await generateJapaneseSentences(selectedKanji, targetLevel);
+        geminiResult = await generateJapaneseSentences(selectedKanji, targetLevel);
       } else {
-        result = await generateEnglishSentences(selectedKanji, targetLevel);
+        geminiResult = await generateEnglishSentences(selectedKanji, targetLevel);
       }
 
-      const sentencesWithContext = result.map(s => ({
-          sentence: s,
+      setLoadingMessage('Looking up words in dictionary...');
+      const enrichedSentences = await Promise.all(
+        geminiResult.map(async (s) => {
+          const enrichedTokens = await Promise.all(
+            s.tokens.map(wordString => getWordDetails(wordString))
+          );
+          return { ...s, tokens: enrichedTokens };
+        })
+      );
+
+      const sentencesWithContext = enrichedSentences.map(s => ({
+          sentence: s as JapaneseSentence | EnglishSentence,
           usedKanjiInSentence: kanjiList.filter(k => s.japanese.includes(k.character)).map(k => k.character)
       }));
       
@@ -98,6 +111,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
       setSessionInProgress(false);
     } finally {
       setIsLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -147,8 +161,8 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
             </button>
         </div>
         <div className="space-y-4">
-            {sentences.map((sentenceWithContext, index) => (
-            <SentenceCard key={index} sentenceWithContext={sentenceWithContext} mode={sessionMode!} onUpdateReview={onUpdateKanjiReview} onWordClick={setSelectedWord} />
+            {sentences.map((sentenceWithContext) => (
+            <SentenceCard key={sentenceWithContext.sentence.japanese} sentenceWithContext={sentenceWithContext} mode={sessionMode!} onUpdateReview={onUpdateKanjiReview} onWordClick={setSelectedWord} />
             ))}
         </div>
     </div>
@@ -164,7 +178,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
       {isLoading && !sessionInProgress && (
             <div className="text-center py-8 text-theme-text-muted flex flex-col items-center gap-4">
                 <SpinnerIcon />
-                <p>Building your personalized review session...</p>
+                <p>{loadingMessage || 'Building your personalized review session...'}</p>
             </div>
       )}
 
