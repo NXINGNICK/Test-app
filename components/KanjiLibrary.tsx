@@ -47,13 +47,16 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ kanjiList, onAddKanji, onDe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.debug("KanjiLibrary: handleSubmit called.");
     if (inputValue.trim()) {
       setFeedback('Processing Kanji...');
       try {
         const addedCount = await onAddKanji(inputValue);
+        console.debug(`KanjiLibrary: onAddKanji returned: ${addedCount}`);
         setFeedback(`${addedCount} new Kanji added to your library.`);
         setInputValue('');
       } catch (error) {
+        console.error("KanjiLibrary: Error in handleSubmit:", error);
         setFeedback('Error adding Kanji. Please try again.');
       }
       setTimeout(() => setFeedback(''), 4000);
@@ -64,15 +67,19 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ kanjiList, onAddKanji, onDe
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.debug("KanjiLibrary: handleImageUpload called with file:", file.name);
     setFeedback('Analyzing image...');
     try {
         const reader = new FileReader();
         reader.onload = async (event) => {
             try {
                 const base64String = (event.target?.result as string).split(',')[1];
+                console.debug("KanjiLibrary: Image converted to base64, calling onAddKanjiFromImage.");
                 const addedCount = await onAddKanjiFromImage(base64String);
+                console.debug(`KanjiLibrary: onAddKanjiFromImage returned: ${addedCount}`);
                 setFeedback(`Added ${addedCount} new Kanji from the image.`);
             } catch (error) {
+                console.error("KanjiLibrary: Error processing image in reader.onload:", error);
                 setFeedback('Error analyzing image. Please try again.');
             } finally {
                if (fileInputRef.current) fileInputRef.current.value = '';
@@ -80,11 +87,13 @@ const KanjiLibrary: React.FC<KanjiLibraryProps> = ({ kanjiList, onAddKanji, onDe
             }
         };
         reader.onerror = () => {
+            console.error("KanjiLibrary: FileReader error.");
             setFeedback('Error reading file.');
             setTimeout(() => setFeedback(''), 3000);
         };
         reader.readAsDataURL(file);
     } catch(err) {
+        console.error("KanjiLibrary: Error in handleImageUpload:", err);
         setFeedback('An error occurred during image upload.');
     }
   };

@@ -19,25 +19,38 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
   const [jlptFilter, setJlptFilter] = useState<number>(0); // 0 for any
   
   const selectKanjiForPrompt = (): Kanji[] => {
+    console.debug("SentenceGenerator: selectKanjiForPrompt called.");
     const now = Date.now();
     let candidates = [...kanjiList];
+    console.debug("SentenceGenerator: Initial candidates:", candidates.length);
 
     if (jlptFilter > 0) {
         candidates = candidates.filter(k => k.jlptLevel === jlptFilter);
+        console.debug("SentenceGenerator: Candidates after JLPT filter (N" + jlptFilter + "):", candidates.length);
     }
     
-    if (candidates.length === 0) return [];
+    if (candidates.length === 0) {
+        console.debug("SentenceGenerator: No candidates after filtering.");
+        return [];
+    }
 
     const dueForReview = candidates
         .filter(k => k.nextReviewAt <= now)
         .sort((a,b) => a.srsLevel - b.srsLevel); // Prioritize lower SRS levels
+    console.debug("SentenceGenerator: Due for review candidates:", dueForReview.map(k => k.character));
 
     if (dueForReview.length > 0) {
-        return dueForReview.slice(0, 7); // Focus on up to 7 review items
+        const result = dueForReview.slice(0, 7); // Focus on up to 7 review items
+        console.debug("SentenceGenerator: Selected due for review Kanji:", result.map(k => k.character));
+        return result;
     }
     
     // If no reviews, fall back to recency and staleness
-    if (candidates.length <= 7) return candidates;
+    console.debug("SentenceGenerator: No items due for review. Falling back to recency/staleness.");
+    if (candidates.length <= 7) {
+      console.debug("SentenceGenerator: Selected all remaining candidates as there are 7 or less:", candidates.map(k => k.character));
+      return candidates;
+    }
 
     const sortedByRecency = [...candidates].sort((a, b) => b.addedAt - a.addedAt);
     const sortedByStaleness = [...candidates].sort((a, b) => a.lastUsedAt - b.lastUsedAt);
@@ -48,14 +61,20 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
     const combined = new Map<string, Kanji>();
     [...recentKanji, ...staleKanji].forEach(k => combined.set(k.character, k));
     
-    return Array.from(combined.values());
+    const finalSelection = Array.from(combined.values());
+    console.debug("SentenceGenerator: Selected Kanji by recency/staleness:", finalSelection.map(k => k.character));
+    return finalSelection;
   };
 
   const handleGenerate = async (generationMode: GenerationMode) => {
+    console.debug(`SentenceGenerator: handleGenerate called with mode: ${generationMode}`);
     const selectedKanji = selectKanjiForPrompt();
+    console.debug("SentenceGenerator: Kanji selected for prompt:", selectedKanji.map(k => ({char: k.character, srs: k.srsLevel, due: new Date(k.nextReviewAt).toISOString()})));
 
     if (selectedKanji.length === 0) {
-      setError("No Kanji available for sentence generation with the current filters. Please add some or adjust your filters.");
+      const errorMsg = "No Kanji available for sentence generation with the current filters. Please add some or adjust your filters.";
+      console.error("SentenceGenerator:", errorMsg);
+      setError(errorMsg);
       return;
     }
 
@@ -68,6 +87,7 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
       let result: (JapaneseSentence | EnglishSentence)[];
       const targetLevel = jlptFilter > 0 ? jlptFilter : undefined;
 
+      console.debug("SentenceGenerator: Starting sentence generation API call.");
       if (generationMode === GenerationMode.Japanese) {
         result = await generateJapaneseSentences(selectedKanji, targetLevel);
       } else {
@@ -82,11 +102,14 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, onUpda
         return { sentence: s, usedKanjiInSentence };
       });
       
+      console.debug("SentenceGenerator: Successfully received and processed sentences:", sentencesWithContext);
       setSentences(sentencesWithContext);
       const allUsedKanji = [...new Set(sentencesWithContext.flatMap(s => s.usedKanjiInSentence))];
+      console.debug("SentenceGenerator: Updating usage for Kanji:", allUsedKanji);
       onUpdateKanjiUsage(allUsedKanji);
 
     } catch (err) {
+      console.error("SentenceGenerator: Error during generation:", err);
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setIsLoading(false);

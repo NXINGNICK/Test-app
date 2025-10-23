@@ -16,6 +16,7 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
   const { sentence, usedKanjiInSentence } = sentenceWithContext;
 
   const handleFeedback = (performance: 'correct' | 'incorrect') => {
+    console.debug(`SentenceCard: handleFeedback called for Kanji: ${usedKanjiInSentence} with performance: ${performance}`);
     if (usedKanjiInSentence.length > 0) {
       onUpdateReview(usedKanjiInSentence, performance);
     }

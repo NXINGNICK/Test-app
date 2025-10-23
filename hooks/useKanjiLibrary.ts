@@ -43,15 +43,19 @@ export const useKanjiLibrary = () => {
   };
   
   const addKanji = useCallback(async (text: string): Promise<number> => {
+    console.debug("useKanjiLibrary: addKanji called with text:", text);
     setIsLoading(true);
     try {
         const existingChars = new Set(kanjiList.map(k => k.character));
         const newKanjiChars = [...new Set(text.match(KANJI_REGEX) || [])].filter(
           (char) => !existingChars.has(char)
         );
+        console.debug("useKanjiLibrary: Found new unique Kanji characters:", newKanjiChars);
 
         if (newKanjiChars.length > 0) {
+            console.debug("useKanjiLibrary: Fetching JLPT levels for new Kanji.");
             const jlptLevels = await getKanjiJlptLevels(newKanjiChars);
+            console.debug("useKanjiLibrary: Received JLPT levels:", jlptLevels);
             const timestamp = Date.now();
             const newKanji: Kanji[] = newKanjiChars.map(character => ({
                 character,
@@ -65,6 +69,7 @@ export const useKanjiLibrary = () => {
                 correctStreak: 0,
             }));
           
+          console.debug("useKanjiLibrary: Saving new Kanji to list:", newKanji);
           saveKanjiList([...kanjiList, ...newKanji]);
         }
         return newKanjiChars.length;
@@ -77,9 +82,12 @@ export const useKanjiLibrary = () => {
   }, [kanjiList]);
 
   const addKanjiFromImage = useCallback(async (base64Image: string) => {
+    console.debug("useKanjiLibrary: addKanjiFromImage called.");
     setIsLoading(true);
     try {
+      console.debug("useKanjiLibrary: Calling Gemini to extract Kanji from image.");
       const extractedKanjiText = (await geminiExtractKanjiFromImage(base64Image)).join('');
+      console.debug("useKanjiLibrary: Extracted Kanji text from image:", extractedKanjiText);
       return await addKanji(extractedKanjiText);
     } catch (error) {
       console.error("Failed to extract or add Kanji from image:", error);
@@ -90,11 +98,13 @@ export const useKanjiLibrary = () => {
   }, [addKanji]);
 
   const deleteKanji = (character: string) => {
+    console.debug(`useKanjiLibrary: deleteKanji called for: ${character}`);
     const updatedList = kanjiList.filter((k) => k.character !== character);
     saveKanjiList(updatedList);
   };
 
   const updateKanjiUsage = (characters: string[]) => {
+    console.debug("useKanjiLibrary: updateKanjiUsage called for:", characters);
     const timestamp = Date.now();
     const updatedList = kanjiList.map(kanji => {
       if (characters.includes(kanji.character)) {
@@ -110,6 +120,7 @@ export const useKanjiLibrary = () => {
   };
 
   const updateKanjiReview = (characters: string[], performance: 'correct' | 'incorrect') => {
+    console.debug(`useKanjiLibrary: updateKanjiReview called for: ${characters} with performance: ${performance}`);
     const timestamp = Date.now();
     const updatedList = kanjiList.map(kanji => {
       if (characters.includes(kanji.character)) {
