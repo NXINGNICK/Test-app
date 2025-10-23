@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import type { JapaneseSentence, EnglishSentence, SentenceWithContext, WordToken } from '../types';
+import React, { useState, useMemo } from 'react';
+import type { JapaneseSentence, EnglishSentence, SentenceWithContext, WordToken, Kanji, VocabularyItem } from '../types';
 import { GenerationMode } from '../types';
 import { ThumbsUpIcon, ThumbsDownIcon } from './icons';
 
@@ -10,6 +10,8 @@ interface SentenceCardProps {
   onWordClick: (word: WordToken) => void;
   isRevealed: boolean;
   onToggleReveal: () => void;
+  kanjiList: Kanji[];
+  vocabList: VocabularyItem[];
 }
 
 const getJlptColorClass = (level: number): string => {
@@ -23,10 +25,12 @@ const getJlptColorClass = (level: number): string => {
   }
 };
 
-const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, onUpdateReview, onWordClick, isRevealed, onToggleReveal }) => {
+const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, onUpdateReview, onWordClick, isRevealed, onToggleReveal, kanjiList, vocabList }) => {
   const [feedbackGiven, setFeedbackGiven] = useState(false);
-
   const { sentence, usedKanjiInSentence } = sentenceWithContext;
+
+  const vocabWordSet = useMemo(() => new Set(vocabList.map(v => v.word)), [vocabList]);
+  const libraryKanjiSet = useMemo(() => new Set(kanjiList.map(k => k.character)), [kanjiList]);
 
   const handleFeedback = (performance: 'correct' | 'incorrect') => {
     if (usedKanjiInSentence.length > 0) {
@@ -38,17 +42,32 @@ const SentenceCard: React.FC<SentenceCardProps> = ({ sentenceWithContext, mode, 
   const renderJapaneseTokens = (tokens: WordToken[]) => (
     <p className="text-3xl mb-2 font-light tracking-wide text-theme-text flex flex-wrap items-center leading-loose">
       {tokens.map((token, i) => {
-        // Don't style particles or make them clickable.
         if (token.definition === 'Particle') {
             return <span key={i} className="px-1 text-theme-text font-normal">{token.word}</span>;
         }
+
+        const isVocab = vocabWordSet.has(token.word);
+        const hasLibraryKanji = !isVocab && token.word.split('').some(char => libraryKanjiSet.has(char));
+        let colorClass = '';
+        let title = token.jlptLevel > 0 ? `JLPT N${token.jlptLevel}` : 'Common word';
+
+        if (isVocab) {
+            colorClass = 'text-theme-accent font-semibold';
+            title = `In your vocabulary. ${title}`;
+        } else if (hasLibraryKanji) {
+            colorClass = 'text-theme-primary font-semibold';
+            title = `Contains library Kanji. ${title}`;
+        } else {
+            colorClass = getJlptColorClass(token.jlptLevel);
+        }
+
         return (
             <button 
                 key={i} 
-                className={`hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30 ${getJlptColorClass(token.jlptLevel)}`}
+                className={`hover:bg-theme-primary/20 rounded px-1 -mx-1 py-1 transition-colors focus:outline-none focus:bg-theme-primary/30 ${colorClass}`}
                 onClick={() => onWordClick(token)}
                 aria-label={`View details for ${token.word}`}
-                title={token.jlptLevel > 0 ? `JLPT N${token.jlptLevel}` : 'Common word'}
+                title={title}
             >
                 {token.word}
             </button>

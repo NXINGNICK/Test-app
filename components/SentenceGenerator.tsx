@@ -193,6 +193,8 @@ const SentenceGenerator: React.FC<SentenceGeneratorProps> = ({ kanjiList, vocabL
                         return newSet;
                     });
                 }}
+                kanjiList={kanjiList}
+                vocabList={vocabList}
             />
             ))}
         </div>

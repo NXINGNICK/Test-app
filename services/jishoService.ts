@@ -1,6 +1,11 @@
 import type { WordToken, KanjiApiData } from '../types';
 
-const JishoAPI = 'https://jisho.org/api/v1/search/words?keyword=';
+// The unofficial Jisho API can be blocked by browsers due to CORS policy.
+// We use a public CORS proxy to safely fetch data from the client-side.
+const JishoAPIEndpoint = 'https://jisho.org/api/v1/search/words?keyword=';
+// Switched to a more robust CORS proxy that wraps the response.
+const CORS_PROXY_URL = 'https://allorigins.hexlet.app/get?url=';
+
 const KanjiAPI = 'https://kanjiapi.dev/v1/kanji/';
 
 // Simple cache to avoid re-fetching during a session
@@ -18,7 +23,7 @@ const parseJlptLevel = (tags: string[]): number => {
 };
 
 // A list of common particles to handle gracefully
-const particles = new Set(['は', 'が', 'を', 'に', 'へ', 'と', 'も', 'の', 'で', 'か', 'よ', 'ね', 'わ', '。', '、']);
+const particles = new Set(['は', 'が', 'を', 'に', 'へ', 'と', 'も', 'の', 'で', 'か', 'よ', 'ね', 'わ', '。', '、', 'な']);
 
 
 const createDefaultToken = (word: string): WordToken => ({
@@ -45,14 +50,26 @@ export const getWordDetails = async (word: string): Promise<WordToken> => {
     }
 
     try {
-        const response = await fetch(`${JishoAPI}${encodeURIComponent(word)}`);
+        const targetUrl = `${JishoAPIEndpoint}${encodeURIComponent(word)}`;
+        const proxyUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(proxyUrl);
         if (!response.ok) {
-            console.warn(`Jisho API request failed for "${word}": ${response.statusText}`);
+            console.warn(`Jisho API request via proxy failed for "${word}": ${response.statusText}`);
             wordCache.set(word, null);
             return createDefaultToken(word);
         }
         
-        const json = await response.json();
+        const proxyResponse = await response.json();
+        
+        // The 'allorigins' proxy wraps the actual API response in a 'contents' field.
+        if (!proxyResponse.contents) {
+             console.warn(`CORS proxy response for "${word}" did not contain 'contents' field.`);
+             wordCache.set(word, null);
+             return createDefaultToken(word);
+        }
+
+        const json = JSON.parse(proxyResponse.contents);
 
         // If we get any data, trust the first result from Jisho.
         // Jisho is good at returning the dictionary form for conjugated words.
